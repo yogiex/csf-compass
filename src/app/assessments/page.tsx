@@ -2,16 +2,34 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw } from 'lucide-react';
 import { withAuthGuard } from '@/lib/auth-guard';
-import { assessmentDB } from '@/lib/db-client';
+import { assessmentDB, assetDB } from '@/lib/db-client';
+import type { Asset, Assessment } from '@/lib/mock-data';
 import { AssessmentTable } from '@/components/features/assessment/AssessmentTable';
+import { AssessmentFilters } from '@/components/features/assessment/AssessmentFilters';
+import { ExportMenu } from '@/components/features/assessment/ExportMenu';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 function AssessmentsPage() {
   const [reloadKey, setReloadKey] = useState(0);
-  const assessments = useMemo(() => assessmentDB.getAll(), [reloadKey]);
+  const [functionFilter, setFunctionFilter] = useState('');
+  const [assetFilter, setAssetFilter] = useState('');
+
+  const assessments: Assessment[] = useMemo(
+    () => assessmentDB.getAll(),
+    [reloadKey]
+  );
+  const assets: Asset[] = useMemo(() => assetDB.getAll(), [reloadKey]);
+
+  const filteredAssessments = useMemo(() => {
+    return assessments.filter(
+      (assessment) =>
+        (functionFilter === '' || assessment.functionKey === functionFilter) &&
+        (assetFilter === '' || assessment.assetId === assetFilter)
+    );
+  }, [assessments, functionFilter, assetFilter]);
 
   const reload = () => setReloadKey((key) => key + 1);
 
@@ -34,18 +52,24 @@ function AssessmentsPage() {
     }
   };
 
+  const handleClearFilters = () => {
+    setFunctionFilter('');
+    setAssetFilter('');
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Penilaian Assessment
+            Daftar Penilaian
           </h1>
           <p className="text-sm text-muted-foreground">
             Kelola hasil penilaian kepatuhan NIST CSF v2.0 untuk setiap aset.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportMenu assessments={filteredAssessments} assets={assets} />
           <Button variant="outline" onClick={handleReset}>
             <RotateCcw />
             Reset Data
@@ -54,14 +78,28 @@ function AssessmentsPage() {
             href="/assessments/new"
             className={buttonVariants({ size: 'default' })}
           >
-            Tambah Assessment Baru
+            <Plus />
+            Buat Penilaian
           </Link>
         </div>
       </div>
 
+      <AssessmentFilters
+        functionFilter={functionFilter}
+        assetFilter={assetFilter}
+        onFunctionChange={setFunctionFilter}
+        onAssetChange={setAssetFilter}
+        onClear={handleClearFilters}
+        assets={assets}
+        resultCount={filteredAssessments.length}
+      />
+
       <Card className="shadow-sm">
         <CardContent className="pt-6">
-          <AssessmentTable assessments={assessments} onDelete={handleDelete} />
+          <AssessmentTable
+            assessments={filteredAssessments}
+            onDelete={handleDelete}
+          />
         </CardContent>
       </Card>
     </div>
