@@ -5,6 +5,8 @@ export const CSF_TIERS = [
     name: 'Tidak Dinilai',
     description: 'Belum ada penilaian yang dilakukan untuk sub-kategori ini.',
     color: 'bg-gray-400',
+    textColor: 'text-gray-700 dark:text-gray-300',
+    bgLight: 'bg-gray-100 dark:bg-gray-800',
   },
   {
     value: 1,
@@ -12,6 +14,8 @@ export const CSF_TIERS = [
     name: 'Parsial',
     description: 'Praktik keamanan siber dilakukan secara ad-hoc dan tidak terkoordinasi.',
     color: 'bg-red-500',
+    textColor: 'text-red-700 dark:text-red-300',
+    bgLight: 'bg-red-100 dark:bg-red-900/30',
   },
   {
     value: 2,
@@ -19,6 +23,8 @@ export const CSF_TIERS = [
     name: 'Sadar Risiko',
     description: 'Praktik keamanan siber mulai terinformasi oleh risiko, tetapi belum terstandarisasi.',
     color: 'bg-orange-500',
+    textColor: 'text-orange-700 dark:text-orange-300',
+    bgLight: 'bg-orange-100 dark:bg-orange-900/30',
   },
   {
     value: 3,
@@ -26,6 +32,8 @@ export const CSF_TIERS = [
     name: 'Berulang',
     description: 'Praktik keamanan siber secara formal ditetapkan, didokumentasikan, dan diulang secara konsisten.',
     color: 'bg-yellow-500',
+    textColor: 'text-yellow-700 dark:text-yellow-300',
+    bgLight: 'bg-yellow-100 dark:bg-yellow-900/30',
   },
   {
     value: 4,
@@ -33,6 +41,8 @@ export const CSF_TIERS = [
     name: 'Adaptif',
     description: 'Praktik keamanan siber secara aktif beradaptasi terhadap ancaman dan pelajaran yang didapat.',
     color: 'bg-green-500',
+    textColor: 'text-green-700 dark:text-green-300',
+    bgLight: 'bg-green-100 dark:bg-green-900/30',
   },
 ] as const;
 
@@ -52,4 +62,11 @@ export const getTierName = (value: number): string => {
 
 export const getTierColor = (value: number): string => {
   return getTierDetails(value).color;
+};
+export const getTierBgLight = (value: number): string => {
+  return getTierDetails(value).bgLight;
+};
+
+export const getTierTextColor = (value: number): string => {
+  return getTierDetails(value).textColor;
 };

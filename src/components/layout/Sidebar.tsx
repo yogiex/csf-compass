@@ -14,6 +14,8 @@ import {
   Menu,
   X,
   Building2,
+  Settings,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from 'cn';
 import { useSidebarStore } from '@/store/useSidebarStore';
@@ -55,6 +57,16 @@ const mainItems = [
     href: '/assessments',
     icon: <ClipboardList className="h-5 w-5" />,
     label: 'Penilaian',
+  },
+  {
+    href: '/manual',
+    icon: <BookOpen className="h-5 w-5" />,
+    label: 'Manual NIST CSF',
+  },
+  {
+    href: '/settings',
+    icon: <Settings className="h-5 w-5" />,
+    label: 'Pengaturan',
   },
 ];
 

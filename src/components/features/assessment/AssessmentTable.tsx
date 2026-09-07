@@ -83,7 +83,8 @@ export function AssessmentTable({ assessments, onDelete }: AssessmentTableProps)
                     <Link
                       href={`/assessments/new?edit=${assessment.id}`}
                       className={buttonVariants({ variant: 'ghost', size: 'icon' })}
-                      aria-label={`Edit ${assessment.subCategory}`}
+                      aria-label="Edit penilaian"
+                      title={`Edit ${assessment.subCategory}`}
                     >
                       <Pencil className="size-4" />
                     </Link>

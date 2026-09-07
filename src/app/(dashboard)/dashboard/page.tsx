@@ -6,6 +6,7 @@ import { withAuthGuard } from '@/lib/auth-guard';
 import { assessmentDB, assetDB, projectDB } from '@/lib/db-client';
 import { KpiCards } from '@/components/features/dashboard/KpiCards';
 import { ComplianceOverview } from '@/components/features/dashboard/ComplianceOverview';
+import { MaturityTierOverview } from '@/components/features/dashboard/MaturityTierOverview';
 import { CSFRadarChart } from '@/components/features/dashboard/CSFRadarChart';
 import { TopGapsList } from '@/components/features/dashboard/TopGapsList';
 import { RecentActivity } from '@/components/features/dashboard/RecentActivity';
@@ -96,6 +97,8 @@ function DashboardPage() {
         averageGap={data.avgGap}
         criticalCount={data.criticalCount}
       />
+
+      <MaturityTierOverview assessments={data.assessments} />
 
       <ComplianceOverview assessments={data.assessments} />
 

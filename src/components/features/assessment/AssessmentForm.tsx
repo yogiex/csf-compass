@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import {
   assessmentSchema,
   AssessmentFormData,
@@ -76,6 +77,7 @@ export function AssessmentForm({
     mode: 'onChange',
   });
 
+  const assetId = watch('assetId');
   const functionKey = watch('functionKey');
   const subCategory = watch('subCategory');
   const currentScore = watch('currentScore');
@@ -109,7 +111,30 @@ export function AssessmentForm({
   const statusInfo = complianceStatusInfo(status);
   const severity = getSeverity(gap);
 
+  const isDuplicate = (data: Pick<AssessmentFormData, 'assetId' | 'functionKey' | 'subCategory'>) =>
+    assessmentDB
+      .getAll()
+      .some(
+        (a) =>
+          a.assetId === data.assetId &&
+          a.functionKey === data.functionKey &&
+          a.subCategory === data.subCategory &&
+          (!isEdit || a.id !== initialData?.id)
+      );
+
+  const duplicateExists = useMemo(() => {
+    if (!assetId || !functionKey || !subCategory) return false;
+    return isDuplicate({ assetId, functionKey, subCategory });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assetId, functionKey, subCategory, isEdit, initialData?.id]);
+
   const onSubmit = async (data: AssessmentFormData) => {
+    if (isDuplicate(data)) {
+      toast.error('Gagal', {
+        description: 'Penilaian untuk aset, fungsi, dan sub-kategori ini sudah ada.',
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 400));
@@ -124,10 +149,16 @@ export function AssessmentForm({
       };
       if (isEdit && initialData?.id) {
         assessmentDB.update(initialData.id, payload);
+        toast.success('Berhasil', { description: 'Penilaian berhasil diperbarui' });
       } else {
         assessmentDB.create(payload);
+        toast.success('Berhasil', { description: 'Penilaian berhasil ditambahkan' });
       }
       router.push('/assessments');
+    } catch {
+      toast.error('Gagal', {
+        description: 'Terjadi kesalahan saat menyimpan penilaian.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -158,6 +189,7 @@ export function AssessmentForm({
                     setSelectedProjectId(value);
                     setValue('assetId', '');
                   }}
+                  disabled={isEdit}
                 >
                   <SelectTrigger id="projectId" className={cn(errors.projectId && 'border-destructive')}>
                     <SelectValue placeholder="Pilih proyek" />
@@ -352,12 +384,21 @@ export function AssessmentForm({
               </AlertDescription>
             </Alert>
           )}
+
+          {duplicateExists && (
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertDescription>
+                Penilaian untuk kombinasi aset, fungsi, dan sub-kategori ini sudah ada.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
         <CardFooter className="flex justify-end gap-3 border-t pt-6">
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Batal
           </Button>
-          <Button type="submit" disabled={!isValid || isSubmitting || assets.length === 0}>
+          <Button type="submit" disabled={!isValid || isSubmitting || assets.length === 0 || duplicateExists}>
             {isSubmitting
               ? 'Menyimpan...'
               : isEdit
