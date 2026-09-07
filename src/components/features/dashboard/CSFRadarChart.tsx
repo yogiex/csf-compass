@@ -7,8 +7,10 @@ import {
   PolarAngleAxis,
   ResponsiveContainer,
   Legend,
+  Tooltip,
 } from 'recharts';
 import { CSF_CATEGORIES, Assessment } from '@/lib/mock-data';
+import { calculateGap } from '@/lib/utils/calculateGap';
 
 interface CSFRadarChartProps {
   assessments: Assessment[];
@@ -26,10 +28,13 @@ export function CSFRadarChart({ assessments }: CSFRadarChartProps) {
         items.length === 0
           ? 0
           : items.reduce((sum, a) => sum + a.targetScore, 0) / items.length;
+      const gap = items.length === 0 ? 0 : calculateGap(current, target);
       return {
         subject: CSF_CATEGORIES[key].label,
         current: Number(current.toFixed(2)),
         target: Number(target.toFixed(2)),
+        gap: Number(((gap / 100) * 4).toFixed(2)),
+        gapPercent: gap,
       };
     });
 
@@ -51,6 +56,21 @@ export function CSFRadarChart({ assessments }: CSFRadarChartProps) {
           stroke="#3B82F6"
           fill="#3B82F6"
           fillOpacity={0.5}
+        />
+        <Radar
+          name="Gap"
+          dataKey="gap"
+          stroke="#EF4444"
+          fill="#EF4444"
+          fillOpacity={0.15}
+        />
+        <Tooltip
+          formatter={(value, name) => {
+            if (name === 'gap') {
+              return [`${Math.round(((Number(value) / 4) * 100))}%`, name];
+            }
+            return [value, name];
+          }}
         />
         <Legend />
       </RadarChart>

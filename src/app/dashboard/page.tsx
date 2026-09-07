@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { withAuthGuard } from '@/lib/auth-guard';
 import { assessmentDB, assetDB } from '@/lib/db-client';
 import { KpiCards } from '@/components/features/dashboard/KpiCards';
+import { ComplianceOverview } from '@/components/features/dashboard/ComplianceOverview';
 import { CSFRadarChart } from '@/components/features/dashboard/CSFRadarChart';
 import { TopGapsList } from '@/components/features/dashboard/TopGapsList';
 import { RecentActivity } from '@/components/features/dashboard/RecentActivity';
@@ -61,6 +62,8 @@ function DashboardPage() {
         averageGap={data.avgGap}
         criticalCount={data.criticalCount}
       />
+
+      <ComplianceOverview assessments={data.assessments} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="shadow-sm">
