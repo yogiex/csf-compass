@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const assessmentSchema = z
   .object({
+    projectId: z.string().min(1, 'Proyek harus dipilih'),
     assetId: z.string().min(1, 'Aset harus dipilih'),
     functionKey: z.string().min(1, 'Fungsi harus dipilih'),
     subCategory: z.string().min(1, 'Sub-kategori harus dipilih'),

@@ -9,7 +9,7 @@ import {
   AssessmentFormData,
 } from '@/lib/validations/assessment.schema';
 import { CSF_CATEGORIES, FunctionKey } from '@/lib/mock-data';
-import { assetDB, assessmentDB } from '@/lib/db-client';
+import { assetDB, assessmentDB, projectDB } from '@/lib/db-client';
 import { calculateGap } from '@/lib/utils/calculateGap';
 import { getSeverity, SEVERITY_LABEL } from '@/lib/utils/getSeverity';
 import {
@@ -43,10 +43,18 @@ export function AssessmentForm({
 }: AssessmentFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [assets, setAssets] = useState<{ id: string; name: string }[]>([]);
+  const [assets, setAssets] = useState<{ id: string; name: string; projectId: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    () =>
+      initialData?.assetId
+        ? assetDB.getById(initialData.assetId)?.projectId ?? ''
+        : ''
+  );
 
   useEffect(() => {
     setAssets(assetDB.getAll());
+    setProjects(projectDB.getAll());
   }, []);
 
   const {
@@ -57,12 +65,13 @@ export function AssessmentForm({
     formState: { errors, isValid },
   } = useForm<AssessmentFormData>({
     resolver: zodResolver(assessmentSchema),
-    defaultValues: initialData || {
-      assetId: '',
-      functionKey: '',
-      subCategory: '',
-      currentScore: 0,
-      targetScore: 4,
+    defaultValues: {
+      projectId: selectedProjectId,
+      assetId: initialData?.assetId ?? '',
+      functionKey: initialData?.functionKey ?? '',
+      subCategory: initialData?.subCategory ?? '',
+      currentScore: initialData?.currentScore ?? 0,
+      targetScore: initialData?.targetScore ?? 4,
     },
     mode: 'onChange',
   });
@@ -71,6 +80,11 @@ export function AssessmentForm({
   const subCategory = watch('subCategory');
   const currentScore = watch('currentScore');
   const targetScore = watch('targetScore');
+
+  const filteredAssets = useMemo(
+    () => assets.filter((a) => a.projectId === selectedProjectId),
+    [assets, selectedProjectId]
+  );
 
   const availableSubCategories = useMemo(() => {
     if (!functionKey) return [];
@@ -101,9 +115,12 @@ export function AssessmentForm({
       await new Promise((resolve) => setTimeout(resolve, 400));
       const asset = assets.find((a) => a.id === data.assetId);
       const payload = {
-        ...data,
-        assetName: asset?.name ?? '',
+        assetId: data.assetId,
         functionKey: data.functionKey as FunctionKey,
+        subCategory: data.subCategory,
+        currentScore: data.currentScore,
+        targetScore: data.targetScore,
+        assetName: asset?.name ?? '',
       };
       if (isEdit && initialData?.id) {
         assessmentDB.update(initialData.id, payload);
@@ -126,6 +143,45 @@ export function AssessmentForm({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Proyek */}
+          <div className="space-y-2">
+            <Label htmlFor="projectId">Proyek</Label>
+            <Controller
+              name="projectId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(val) => {
+                    const value = val ?? '';
+                    field.onChange(value);
+                    setSelectedProjectId(value);
+                    setValue('assetId', '');
+                  }}
+                >
+                  <SelectTrigger id="projectId" className={cn(errors.projectId && 'border-destructive')}>
+                    <SelectValue placeholder="Pilih proyek" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                    {projects.length === 0 && (
+                      <SelectItem value="no-project" disabled>
+                        Belum ada proyek. Buat proyek terlebih dahulu.
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.projectId && (
+              <p className="text-sm text-destructive">{errors.projectId.message}</p>
+            )}
+          </div>
+
           {/* Aset */}
           <div className="space-y-2">
             <Label htmlFor="assetId">Aset / Sistem</Label>
@@ -133,19 +189,21 @@ export function AssessmentForm({
               name="assetId"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
+                <Select value={field.value} onValueChange={field.onChange} disabled={isEdit || !selectedProjectId}>
                   <SelectTrigger id="assetId" className={cn(errors.assetId && 'border-destructive')}>
-                    <SelectValue placeholder="Pilih aset yang akan dinilai" />
+                    <SelectValue placeholder={selectedProjectId ? 'Pilih aset' : 'Pilih proyek terlebih dahulu'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {assets.map((asset) => (
+                    {filteredAssets.map((asset) => (
                       <SelectItem key={asset.id} value={asset.id}>
                         {asset.name}
                       </SelectItem>
                     ))}
-                    {assets.length === 0 && (
+                    {filteredAssets.length === 0 && (
                       <SelectItem value="no-asset" disabled>
-                        Belum ada aset. Buat aset terlebih dahulu.
+                        {selectedProjectId
+                          ? 'Belum ada aset untuk proyek ini'
+                          : 'Pilih proyek terlebih dahulu'}
                       </SelectItem>
                     )}
                   </SelectContent>

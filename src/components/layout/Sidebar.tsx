@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Menu,
   X,
+  Building2,
 } from 'lucide-react';
 import { cn } from 'cn';
 import { useSidebarStore } from '@/store/useSidebarStore';
@@ -44,6 +45,11 @@ const mainItems = [
     href: '/assets',
     icon: <Package className="h-5 w-5" />,
     label: 'Aset',
+  },
+  {
+    href: '/projects',
+    icon: <Building2 className="h-5 w-5" />,
+    label: 'Proyek',
   },
   {
     href: '/assessments',

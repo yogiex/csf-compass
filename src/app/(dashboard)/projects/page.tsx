@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Building2, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { assetDB, assessmentDB, projectDB } from '@/lib/db-client';
 import { useProjectStore } from '@/store/useProjectStore';
-import type { Asset } from '@/lib/mock-data';
+import type { Project } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,12 +28,12 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -46,187 +46,182 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+const INDUSTRIES = [
+  'Perbankan',
+  'E-commerce',
+  'Telekomunikasi',
+  'Kesehatan',
+  'Pendidikan',
+  'Pemerintahan',
+  'Lainnya',
+];
+
 interface FormData {
-  projectId: string;
   name: string;
   description: string;
+  industry: string;
 }
 
-const EMPTY_FORM: FormData = { projectId: '', name: '', description: '' };
+const EMPTY_FORM: FormData = { name: '', description: '', industry: '' };
 
-function AssetsPage() {
+function ProjectsPage() {
   const router = useRouter();
-  const { activeProjectId, clearProject } = useProjectStore();
+  const { setActiveProject } = useProjectStore();
   const [reloadKey, setReloadKey] = useState(0);
-  const [projectFilter, setProjectFilter] = useState(activeProjectId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-  const [deletingAsset, setDeletingAsset] = useState<Asset | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<FormData>(EMPTY_FORM);
 
-  const assets = useMemo(() => assetDB.getAll(), [reloadKey]);
   const projects = useMemo(() => projectDB.getAll(), [reloadKey]);
-
-  const filteredAssets = useMemo(
-    () =>
-      projectFilter
-        ? assets.filter((a) => a.projectId === projectFilter)
-        : assets,
-    [assets, projectFilter]
-  );
 
   const reload = () => setReloadKey((key) => key + 1);
 
-  const projectName = (id: string) =>
-    projects.find((p) => p.id === id)?.name ?? 'Proyek tidak ditemukan';
-
-  const clearFilter = () => {
-    setProjectFilter('');
-    clearProject();
-  };
-
   const openCreate = () => {
-    setEditingAsset(null);
-    setFormData({ ...EMPTY_FORM, projectId: projectFilter });
+    setEditingProject(null);
+    setFormData(EMPTY_FORM);
     setDialogOpen(true);
   };
 
-  const openEdit = (asset: Asset) => {
-    setEditingAsset(asset);
+  const openEdit = (project: Project) => {
+    setEditingProject(project);
     setFormData({
-      projectId: asset.projectId,
-      name: asset.name,
-      description: asset.description ?? '',
+      name: project.name,
+      description: project.description ?? '',
+      industry: project.industry ?? '',
     });
     setDialogOpen(true);
   };
 
-  const openDelete = (asset: Asset) => {
-    setDeletingAsset(asset);
+  const openDelete = (project: Project) => {
+    setDeletingProject(project);
     setDeleteOpen(true);
+  };
+
+  const goToProject = (id: string) => {
+    setActiveProject(id);
+    router.push('/dashboard');
   };
 
   const handleSave = () => {
     if (!formData.name.trim()) {
-      toast.error('Nama aset wajib diisi');
-      return;
-    }
-    if (!formData.projectId) {
-      toast.error('Proyek harus dipilih');
+      toast.error('Nama proyek wajib diisi');
       return;
     }
     const payload = {
-      projectId: formData.projectId,
       name: formData.name.trim(),
       description: formData.description.trim(),
+      industry: formData.industry,
     };
-    if (editingAsset) {
-      assetDB.update(editingAsset.id, payload);
-      toast.success('Aset berhasil diperbarui');
+    if (editingProject) {
+      projectDB.update(editingProject.id, payload);
+      toast.success('Proyek berhasil diperbarui');
     } else {
-      assetDB.create(payload);
-      toast.success('Aset berhasil ditambahkan');
+      projectDB.create(payload);
+      toast.success('Proyek berhasil ditambahkan');
     }
     setDialogOpen(false);
     reload();
   };
 
   const handleDelete = () => {
-    if (!deletingAsset) return;
-    const related = assessmentDB.getByAssetId(deletingAsset.id).length;
+    if (!deletingProject) return;
+    const related = assetDB.getByProject(deletingProject.id).length;
     if (related > 0) {
       toast.error('Tidak bisa dihapus', {
-        description: `Aset ini memiliki ${related} penilaian terkait. Hapus penilaian terlebih dahulu.`,
+        description: `Proyek ini memiliki ${related} aset terkait. Hapus aset terlebih dahulu.`,
       });
       setDeleteOpen(false);
-      setDeletingAsset(null);
+      setDeletingProject(null);
       return;
     }
-    assetDB.delete(deletingAsset.id);
-    toast.success('Aset berhasil dihapus');
+    projectDB.delete(deletingProject.id);
+    toast.success('Proyek berhasil dihapus');
     setDeleteOpen(false);
-    setDeletingAsset(null);
+    setDeletingProject(null);
     reload();
   };
 
   return (
-    <div data-testid="assets-page" className="space-y-6">
+    <div data-testid="projects-page" className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manajemen Aset</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Manajemen Proyek</h1>
           <p className="text-sm text-muted-foreground">
-            Kelola aset yang akan dinilai.
+            Kelola perusahaan / proyek yang akan dinilai.
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus />
-          Tambah Aset
+          Tambah Proyek
         </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={projectFilter} onValueChange={(val) => setProjectFilter(val ?? '')}>
-            <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Semua Proyek" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Semua Proyek</SelectItem>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {projectFilter && (
-            <Button variant="ghost" size="icon" onClick={clearFilter} aria-label="Hapus filter">
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground">{filteredAssets.length} aset</p>
       </div>
 
       <div className="rounded-lg border bg-background shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nama Aset</TableHead>
-              <TableHead>Proyek</TableHead>
+              <TableHead>Nama Proyek</TableHead>
+              <TableHead>Industri</TableHead>
               <TableHead>Deskripsi</TableHead>
+              <TableHead>Aset</TableHead>
               <TableHead>Penilaian</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAssets.length === 0 ? (
+            {projects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center gap-3">
-                    <p className="text-sm text-muted-foreground">Belum ada aset</p>
+                    <p className="text-sm text-muted-foreground">Belum ada proyek</p>
                     <Button variant="outline" onClick={openCreate}>
                       <Plus />
-                      Tambah Aset
+                      Tambah Proyek
                     </Button>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAssets.map((asset) => {
-                const assessmentCount = assessmentDB.getByAssetId(asset.id).length;
+              projects.map((project) => {
+                const assetCount = assetDB.getByProject(project.id).length;
+                const assessmentCount = assessmentDB.getByProject(project.id).length;
                 return (
-                  <TableRow key={asset.id}>
-                    <TableCell className="font-medium">{asset.name}</TableCell>
-                    <TableCell>{projectName(asset.projectId)}</TableCell>
+                  <TableRow key={project.id}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => goToProject(project.id)}
+                        className="flex cursor-pointer items-center gap-2 font-medium hover:underline"
+                      >
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        {project.name}
+                      </button>
+                    </TableCell>
+                    <TableCell>{project.industry || '-'}</TableCell>
                     <TableCell className="max-w-xs truncate text-muted-foreground">
-                      {asset.description || '-'}
+                      {project.description || '-'}
                     </TableCell>
                     <TableCell>
                       <button
                         type="button"
-                        onClick={() => router.push('/assessments')}
+                        onClick={() => {
+                          setActiveProject(project.id);
+                          router.push('/assets');
+                        }}
+                        className="cursor-pointer font-medium text-primary hover:underline"
+                      >
+                        {assetCount}
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveProject(project.id);
+                          router.push('/assessments');
+                        }}
                         className="cursor-pointer font-medium text-primary hover:underline"
                       >
                         {assessmentCount}
@@ -237,8 +232,8 @@ function AssetsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => openEdit(asset)}
-                          aria-label={`Edit ${asset.name}`}
+                          onClick={() => openEdit(project)}
+                          aria-label={`Edit ${project.name}`}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -246,8 +241,8 @@ function AssetsPage() {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => openDelete(asset)}
-                          aria-label={`Hapus ${asset.name}`}
+                          onClick={() => openDelete(project)}
+                          aria-label={`Hapus ${project.name}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -265,55 +260,58 @@ function AssetsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingAsset ? 'Edit Aset' : 'Tambah Aset'}
+              {editingProject ? 'Edit Proyek' : 'Tambah Proyek'}
             </DialogTitle>
             <DialogDescription>
-              {editingAsset
-                ? 'Perbarui detail aset yang dinilai.'
-                : 'Tambahkan aset baru untuk mulai melakukan penilaian.'}
+              {editingProject
+                ? 'Perbarui detail proyek yang sedang dinilai.'
+                : 'Tambahkan proyek baru untuk mulai melakukan penilaian.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="asset-project">Proyek</Label>
+              <Label htmlFor="project-name">Nama Proyek</Label>
+              <Input
+                id="project-name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                placeholder="Masukkan nama proyek"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-industry">Industri</Label>
               <Select
-                value={formData.projectId}
+                value={formData.industry}
                 onValueChange={(val) =>
-                  setFormData((prev) => ({ ...prev, projectId: val ?? '' }))
+                  setFormData((prev) => ({ ...prev, industry: val ?? '' }))
                 }
               >
-                <SelectTrigger id="asset-project" className="w-full">
-                  <SelectValue placeholder="Pilih proyek" />
+                <SelectTrigger id="project-industry" className="w-full">
+                  <SelectValue placeholder="Pilih industri" />
                 </SelectTrigger>
                 <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
+                  {INDUSTRIES.map((industry) => (
+                    <SelectItem key={industry} value={industry}>
+                      {industry}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="asset-name">Nama Aset</Label>
-              <Input
-                id="asset-name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="Masukkan nama aset"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="asset-description">Deskripsi</Label>
+              <Label htmlFor="project-description">Deskripsi</Label>
               <Textarea
-                id="asset-description"
+                id="project-description"
                 value={formData.description}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
-                placeholder="Deskripsi singkat aset"
+                placeholder="Deskripsi singkat proyek"
                 rows={3}
               />
             </div>
@@ -321,7 +319,7 @@ function AssetsPage() {
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Batal</DialogClose>
             <Button onClick={handleSave}>
-              {editingAsset ? 'Perbarui' : 'Simpan'}
+              {editingProject ? 'Perbarui' : 'Simpan'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -330,11 +328,11 @@ function AssetsPage() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Aset</AlertDialogTitle>
+            <AlertDialogTitle>Hapus Proyek</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus aset{' '}
+              Apakah Anda yakin ingin menghapus proyek{' '}
               <span className="font-medium text-foreground">
-                {deletingAsset?.name}
+                {deletingProject?.name}
               </span>
               ? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
@@ -354,4 +352,4 @@ function AssetsPage() {
   );
 }
 
-export default AssetsPage;
+export default ProjectsPage;

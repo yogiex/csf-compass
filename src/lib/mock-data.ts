@@ -45,10 +45,22 @@ export interface Assessment {
   createdAt: string;
 }
 
-export interface Asset {
+export interface Project {
   id: string;
   name: string;
-  description: string;
+  description?: string;
+  industry?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Asset {
+  id: string;
+  projectId: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const DEFAULT_ASSESSMENTS: Assessment[] = [
@@ -88,7 +100,47 @@ export const DEFAULT_ASSESSMENTS: Assessment[] = [
 ];
 
 export const DEFAULT_ASSETS: Asset[] = [
-  { id: 'asset-1', name: 'Sistem Core Banking', description: 'Backend transaksi utama' },
-  { id: 'asset-2', name: 'Aplikasi Mobile Banking', description: 'Frontend nasabah' },
-  { id: 'asset-3', name: 'Database HRIS', description: 'Data karyawan internal' },
+  {
+    id: 'asset-1',
+    projectId: 'proj-1',
+    name: 'Sistem Core Banking',
+    description: 'Backend transaksi utama',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'asset-2',
+    projectId: 'proj-1',
+    name: 'Aplikasi Mobile Banking',
+    description: 'Frontend nasabah',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'asset-3',
+    projectId: 'proj-2',
+    name: 'Database HRIS',
+    description: 'Data karyawan internal',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+export const DEFAULT_PROJECTS: Project[] = [
+  {
+    id: 'proj-1',
+    name: 'PT Bank Maju Sejahtera',
+    description: 'Bank digital terkemuka di Indonesia',
+    industry: 'Perbankan',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'proj-2',
+    name: 'PT E-commerce Nusantara',
+    description: 'Platform e-commerce terbesar',
+    industry: 'E-commerce',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 ];

@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { withAuthGuard } from '@/lib/auth-guard';
-import { assessmentDB, assetDB } from '@/lib/db-client';
+import { assessmentDB, assetDB, projectDB } from '@/lib/db-client';
 import { KpiCards } from '@/components/features/dashboard/KpiCards';
 import { ComplianceOverview } from '@/components/features/dashboard/ComplianceOverview';
 import { CSFRadarChart } from '@/components/features/dashboard/CSFRadarChart';
@@ -11,12 +11,30 @@ import { TopGapsList } from '@/components/features/dashboard/TopGapsList';
 import { RecentActivity } from '@/components/features/dashboard/RecentActivity';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { buildGaps } from '@/lib/utils/calculateGap';
+import { useProjectStore } from '@/store/useProjectStore';
 
 function DashboardPage() {
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
+  const setActiveProject = useProjectStore((s) => s.setActiveProject);
+  const projects = useMemo(() => projectDB.getAll(), []);
+
   const data = useMemo(() => {
-    const assessments = assessmentDB.getAll();
-    const assets = assetDB.getAll();
+    const assessments =
+      activeProjectId === ''
+        ? assessmentDB.getAll()
+        : assessmentDB.getByProject(activeProjectId);
+    const assets =
+      activeProjectId === ''
+        ? assetDB.getAll()
+        : assetDB.getByProject(activeProjectId);
     const gaps = buildGaps(assessments);
     const avgGap =
       gaps.length === 0
@@ -29,10 +47,10 @@ function DashboardPage() {
       avgGap: Math.round(avgGap),
       criticalCount,
     };
-  }, []);
+  }, [activeProjectId]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6" data-testid="dashboard-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
@@ -40,6 +58,22 @@ function DashboardPage() {
             Ringkasan postur keamanan siber Anda.
           </p>
         </div>
+        <Select
+          value={activeProjectId}
+          onValueChange={(value) => setActiveProject(value ?? '')}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Semua Proyek" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Semua Proyek</SelectItem>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div className="flex gap-2">
           <Link
             href="/assessments/new"
